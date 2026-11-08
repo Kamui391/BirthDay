@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Төрсөн өдрийн мэнд!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600&family=Playfair+Display:wght@700;900&display=swap&subset=cyrillic" rel="stylesheet">
+<style>
+:root{--sky:#0f2a5c;--sky2:#1d4fa8;--gold:#f2b632;--paper:#f4f8ff;--ink:#0b1b3a}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{font-family:Manrope,system-ui,sans-serif;color:#fff;background:radial-gradient(120% 90% at 50% 0%,var(--sky2),var(--sky) 70%);overflow-x:hidden}
+canvas{position:fixed;inset:0;pointer-events:none;z-index:5}
+.screen{min-height:100%;display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px 22px;text-align:center}
+.screen.on{display:flex;animation:in .7s ease both}
+@keyframes in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.sun{width:92px;height:92px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 14px rgba(242,182,50,.18),0 0 0 32px rgba(242,182,50,.08);margin-bottom:44px}
+h1{font-family:'Playfair Display',Georgia,serif;font-weight:900;font-size:clamp(2.6rem,10vw,5.6rem);line-height:1.08;max-width:12ch}
+.sub{margin-top:22px;font-size:1.15rem;max-width:30ch;line-height:1.6;color:#d6e4ff}
+button{font:600 1.05rem Manrope,sans-serif;cursor:pointer;border:0;border-radius:999px;padding:15px 44px;margin-top:40px;background:var(--gold);color:var(--ink);transition:transform .15s}
+button:hover{transform:scale(1.05)}button:focus-visible{outline:3px solid #fff;outline-offset:3px}
+button.ghost{background:transparent;color:#d6e4ff;border:1.5px solid #6c8cc8;padding:11px 28px;margin-top:26px}
+.card{background:var(--paper);color:var(--ink);border-radius:20px;max-width:560px;width:100%;padding:18px 18px 30px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.frame{position:relative;min-height:200px;border-radius:12px;overflow:hidden;background:linear-gradient(135deg,#c9d9f7,#e8efff);display:grid;place-items:center}
+.frame img{width:100%;height:auto;max-height:70vh;object-fit:contain;display:block}
+.ph{position:absolute;inset:0;display:grid;place-items:center;color:#5b73a3;padding:20px;font-size:.95rem}
+.nav{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;padding:0;margin:0;background:rgba(15,42,92,.75);color:#fff;font-size:1.3rem}
+.nav.l{left:10px}.nav.r{right:10px}
+.dots{display:flex;gap:8px;justify-content:center;margin:14px 0 4px}
+.dots i{width:8px;height:8px;border-radius:50%;background:#b5c5e6}.dots i.a{background:var(--sky2)}
+.cap{font-size:.9rem;color:#5b73a3;min-height:1.3em}
+.msg{margin-top:20px;text-align:left;font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:1.12rem;line-height:1.85;white-space:pre-line}
+.sig{margin-top:18px;text-align:right;font-weight:600;color:var(--sky2)}
+@media(prefers-reduced-motion:reduce){.screen.on{animation:none}button{transition:none}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<section class="screen on" id="s1">
+  <div class="sun"></div>
+  <h1 id="title"></h1>
+  <p class="sub" id="subtitle"></p>
+  <button id="next"></button>
+</section>
+
+<section class="screen" id="s2">
+  <div class="card">
+    <div class="frame"><img id="img" alt=""><div class="ph" id="ph"></div>
+      <button class="nav l" id="prev" aria-label="Өмнөх зураг">‹</button>
+      <button class="nav r" id="fwd" aria-label="Дараагийн зураг">›</button>
+    </div>
+    <div class="dots" id="dots"></div>
+    <div class="cap" id="cap"></div>
+    <p class="msg" id="msg"></p>
+    <p class="sig" id="sig"></p>
+  </div>
+  <button class="ghost" id="back"></button>
+</section>
+
+<script>
+/* ============ ЭНД ӨӨРИЙН ТЕКСТ, ЗУРГАА ЗАСНА ============ */
+const CONFIG = {
+  title: "Төрсөн өдрийн мэнд, ах аа!",
+  subtitle: "Жаахан өөр содон байдлаар төрсөн өдрийн мэндчилгээ бэлдхээр шийдлээ .",
+  nextButton: "Цааш",
+  backButton: "Буцах",
+  // Зураг: images хавтас дотор хуулаад нэрийг нь энд бичнэ. Хэдэн ч зураг нэмж болно.
+  photos: [
+    { src: "images/1_n.jpg",},
+    { src: "images/2_n.jpg",},
+    { src: "images/3_n.png",}
+  ],
+  message:
+`Ахаа, төрсөн өдрийн чинь мэнд хүргэе!
+
+Жаахан балчир байхаас минь хойш үргэлж миний хажууд байж хамгаалж, халамжилж арийг минь дааж явдагт баярладаг шүү ахаа. 
+Бурууг минь засаж, зөвийг минь сайшааж та дэргэд байдаг байсан болохоор өнөөдрийн би болж хүмүүжиж өссөн шүү.
+
+
+Дүүтэйгээ урт удаан жаргал зовлонгоо хуваалцаж хамт байгаарай ахаа.`,
+  signature: "Дүүгээс нь"
+};
+/* ======================================================== */
+
+const $ = id => document.getElementById(id);
+$("title").textContent = CONFIG.title;
+$("subtitle").textContent = CONFIG.subtitle;
+$("next").textContent = CONFIG.nextButton;
+$("back").textContent = CONFIG.backButton;
+$("msg").textContent = CONFIG.message;
+$("sig").textContent = CONFIG.signature;
+document.title = CONFIG.title;
+
+let cur = 0;
+const P = CONFIG.photos;
+function show(i){
+  if(!P.length){$("img").style.display="none";return}
+  cur = (i + P.length) % P.length;
+  const img = $("img"), ph = $("ph");
+  ph.textContent = ""; img.style.display = "block";
+  img.onerror = () => { img.style.display = "none"; ph.textContent = "Зураг олдсонгүй: " + P[cur].src; };
+  img.src = P[cur].src;
+  img.alt = P[cur].caption || "";
+  $("cap").textContent = P[cur].caption || "";
+  $("dots").innerHTML = P.map((_, k) => `<i class="${k === cur ? "a" : ""}"></i>`).join("");
+}
+if(P.length < 2){$("prev").style.display=$("fwd").style.display="none"}
+$("prev").onclick = () => show(cur - 1);
+$("fwd").onclick = () => show(cur + 1);
+
+function go(from, to){ $(from).classList.remove("on"); $(to).classList.add("on"); window.scrollTo(0,0); }
+$("next").onclick = () => { show(0); go("s1","s2"); burst(); };
+$("back").onclick = () => go("s2","s1");
+
+/* Сүрлэг: нэг удаагийн конфетти */
+const cv = $("c"), cx = cv.getContext("2d");
+let parts = [], raf;
+function size(){ cv.width = innerWidth; cv.height = innerHeight; }
+addEventListener("resize", size); size();
+function burst(){
+  if(matchMedia("(prefers-reduced-motion:reduce)").matches) return;
+  const cols = ["#f2b632","#ffffff","#7fb0ff","#ffd980"];
+  for(let i=0;i<140;i++) parts.push({x:innerWidth/2,y:innerHeight*.6,vx:(Math.random()-.5)*16,vy:-Math.random()*16-4,r:Math.random()*6+3,c:cols[i%4],a:1});
+  cancelAnimationFrame(raf); tick();
+}
+function tick(){
+  cx.clearRect(0,0,cv.width,cv.height);
+  parts.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.35;p.a-=.008;cx.globalAlpha=Math.max(p.a,0);cx.fillStyle=p.c;cx.fillRect(p.x,p.y,p.r,p.r*1.6)});
+  parts = parts.filter(p=>p.a>0&&p.y<cv.height+20);
+  if(parts.length) raf = requestAnimationFrame(tick); else cx.clearRect(0,0,cv.width,cv.height);
+}
+setTimeout(burst, 400);
+</script>
+</body>
+</html>
